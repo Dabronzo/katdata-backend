@@ -1,5 +1,6 @@
 ﻿using katdata.Features.Models;
 using katdata.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace katdata.Features.Controllers
@@ -9,6 +10,13 @@ namespace katdata.Features.Controllers
     public class UsersController(UserService userService) : ControllerBase
     {
         private readonly UserService _userService = userService;
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        {
+            var token = await _userService.Authenticate(request.Email, request.Password);
+            return token is not null ? Ok(new { Token = token }) : Unauthorized();
+        }
 
         [HttpPost]
         public async Task<IActionResult> RegisterUser([FromBody] RegisterUserDto dto)
@@ -53,4 +61,6 @@ namespace katdata.Features.Controllers
     }
 
     public record RegisterUserDto(string Email, string Password, UserRoles Role);
+
+    public sealed record LoginRequest(string Email, string Password);
 }
