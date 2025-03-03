@@ -5,7 +5,7 @@ namespace katdata.Features.Models;
 public sealed record User
 {
     [Key]
-    public required Guid Id { get; set; }
+    public required Guid Id { get; init; }
 
     public required string Email { get; init; }
 
