@@ -42,6 +42,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+
 if (string.IsNullOrEmpty(connectionString))
 {
     throw new InvalidOperationException("PostgreSQL connection string is missing!");
