@@ -1,4 +1,6 @@
-﻿namespace katdata.Features.Entities
+﻿using katdata.Features.Entities.Models;
+
+namespace katdata.Features.Entities
 {
     public sealed class Province
     {
@@ -11,6 +13,8 @@
         public required ICollection<ResourceLocation> Resources { get; init; }
 
         public required ICollection<ProductionFacility> ProductionFacility { get; init; } = [];
+
+        public required ICollection<PopulationSegment> PopulationSegments { get; init; } = [];
 
         public void AddResourceLocation(ResourceLocation resourceLocation) => Resources.Add(resourceLocation);
 

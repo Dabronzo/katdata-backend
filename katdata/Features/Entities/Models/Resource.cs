@@ -9,20 +9,20 @@ namespace katdata.Features.Entities.Models
 
         public abstract ResourceTypes Type { get; }
 
-        public required string Name { get; init;}
+        public required ResourceName Name { get; init;}
 
-        public required string Description { get; init; }
+        public string? Description { get; init; }
 
     }
 
-    public sealed record RawResource : Resource
+    public abstract record RawResource : Resource
     {
         public required string SomeUniqueProp { get; init; } 
 
         public override ResourceTypes Type => ResourceTypes.Raw;
     }
 
-    public sealed record ManufacturedResource : Resource
+    public abstract record ManufacturedResource : Resource
     {
         public override ResourceTypes Type => ResourceTypes.Manufactured;
     }
@@ -31,4 +31,14 @@ namespace katdata.Features.Entities.Models
     {
         public override ResourceTypes Type => ResourceTypes.HighTech;
     }
+
+    public enum ResourceName
+    {
+        None = 0,
+        Wood,
+        Tools,
+    }
+
+
+
 }
