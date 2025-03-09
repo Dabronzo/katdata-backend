@@ -8,23 +8,46 @@ namespace katdata.Features.Entities.Population
         [Key]
         public Guid Id { get; init; }
 
-        public required Guid SettlementId { get; init; } // Link to Settlement
+        public required Guid SegmentId { get; init; } // Link to Settlement
 
-        public required int LifeCicle { get; set; }
+        public required int CurrentAge { get; set; } = 0;
 
         public abstract PopulationSegmentType Type { get; }
 
-        public required long Total { get; set; }
+        public abstract int MaxAge { get; }
+
+        protected long PopulationCount { get; set; }
+
+        public long GetTotal() => this.PopulationCount;
+
+        public void ProcessAge() => this.CurrentAge++;
+
+        public void IncreasePopulation(int amount) => this.PopulationCount += amount;
+
+        public void DecreasePopulation(int amount) => this.PopulationCount = Math.Max(0, this.PopulationCount - amount);
+
 
     }
+
+    public sealed class NewBorn : PopulationSegment
+    {
+        public override PopulationSegmentType Type => PopulationSegmentType.NewBorn;
+
+        public override int MaxAge => 12;
+    }
+
 
     public sealed class Children : PopulationSegment
     {
         public override PopulationSegmentType Type => PopulationSegmentType.Children;
 
-        public required long Student {  get; init; }
+        public override int MaxAge => 24;
 
-        public required long Uneducated {  get; init; }
+        public required decimal Education { get; set;}
+
+        public long EducatedCount => (long)Math.Round(this.PopulationCount * this.Education);
+
+        public long NonEducatedCount => this.PopulationCount - this.EducatedCount;
 
     }
 
@@ -32,11 +55,19 @@ namespace katdata.Features.Entities.Population
     {
         public override PopulationSegmentType Type => PopulationSegmentType.Studend;
 
-        public required long BasicEducation { get; set; }
+        public required decimal Working { get; set; }
 
-        public required long AdvancedEducation { get; set; }
+        public required decimal TecnincalEducation { get; set; }
 
-        public required long HigherEducation { get; set; }
+        public required decimal HighEducation { get; set; }
+
+        public override int MaxAge => 48;
+
+        public long WorkingCount => (long)Math.Round(this.PopulationCount * this.Working);
+
+        public long TecnicalSudentsCount => (long)Math.Round(this.PopulationCount * this.TecnincalEducation);
+
+        public long HightEducationCount => (long)Math.Round(this.PopulationCount * this.HighEducation);
 
     }
 
@@ -44,18 +75,26 @@ namespace katdata.Features.Entities.Population
     {
         public override PopulationSegmentType Type => PopulationSegmentType.Workforce;
 
-        public required long LowLevel { get; set; } // Can only do basic labor
+        public required decimal BasicWorkers { get; set; } // Can only do basic labor
 
-        public required long BasicLevel { get; set; } // Low-skill workers
+        public required decimal TecnicalWorkers { get; set; } // High-skill workers
 
-        public required long Tecnical { get; set; } // High-skill workers
+        public required decimal HighLevelWorkers { get; set; } // Engineers, researchers, doctors
 
-        public required long HighLevel { get; set; } // Engineers, researchers, doctors
+        public override int MaxAge => 168;
+
+        public long BasicWorkersCount => (long)Math.Round(this.PopulationCount * this.BasicWorkers);
+
+        public long TecnicalWorkersCount => (long)Math.Round(this.PopulationCount * this.TecnicalWorkers);
+
+        public long HighLevelWorkersCount => (long)Math.Round(this.PopulationCount * this.HighLevelWorkers);
     }
 
     public sealed class Retired : PopulationSegment
     {
         public override PopulationSegmentType Type => PopulationSegmentType.Retired;
+
+        public override int MaxAge => 48;
 
     }
 
@@ -89,41 +128,15 @@ namespace katdata.Features.Entities.Population
 
     public sealed class PopulationProcessor
     {
-        public void ProcessTurn(Settlement settlement)
+
+        private void MovingAgeingPopulation(Settlement settlement)
         {
-            ProcessGrowth(settlement);
-            ProcessEducation(settlement);
-            ProcessWorkforce(settlement);
-            ProcessRetirement(settlement);
+            List<Population> segments = new()
+            {
+
+            }
         }
 
-        private void ProcessGrowth(Settlement settlement)
-        {
-            //var growthRate = settlement.GrowthIndicator.Health * 0.01m; // Example scaling
-            //var newBirths = (long)(settlement.TotalPopulation * growthRate);
-            settlement.Children.Total += 10;
-        }
-
-        private void ProcessEducation(Settlement settlement)
-        {
-            var studentsMovingUp = (long)(settlement.Children.Student * 0.1); // Example: 10% move up per turn
-            settlement.Children.Total -= studentsMovingUp;
-            settlement.AdultStudens.BasicEducation += studentsMovingUp;
-        }
-
-        private void ProcessWorkforce(Settlement settlement)
-        {
-            var graduates = (long)(settlement.AdultStudens.BasicEducation * 0.2); // Example: 20% enter workforce
-            settlement.AdultStudens.BasicEducation -= graduates;
-            settlement.AdultStudens.AdvancedEducation += graduates;
-        }
-
-        private void ProcessRetirement(Settlement settlement)
-        {
-            var retiringWorkers = (long)(settlement.Workforce.LowLevel * 0.05); // Example: 5% retire per turn
-            settlement.Workforce.LowLevel -= retiringWorkers;
-            settlement.Retired.Total += retiringWorkers;
-        }
     }
 
 
@@ -178,6 +191,7 @@ namespace katdata.Features.Entities.Population
     public enum PopulationSegmentType
     {
         None = 0,
+        NewBorn,
         Children,
         Studend,
         Workforce,

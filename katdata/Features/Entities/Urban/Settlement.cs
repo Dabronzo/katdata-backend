@@ -13,6 +13,8 @@ namespace katdata.Features.Entities.Urban
 
         public required SettlementType Type { get; init; }
 
+        public required NewBorn NewBorn { get; set; }
+
         public required Children Children { get; init; }
 
         public required AdultStudents AdultStudens { get; init; }
