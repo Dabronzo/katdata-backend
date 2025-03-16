@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using katdata.Features.Entities.Utils;
 
 namespace katdata.Features.Entities.Models
 {

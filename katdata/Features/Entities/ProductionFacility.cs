@@ -1,5 +1,5 @@
 ﻿using katdata.Features.Entities.Models;
-using Microsoft.EntityFrameworkCore.Storage;
+using katdata.Features.Entities.Utils;
 
 namespace katdata.Features.Entities
 {

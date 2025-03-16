@@ -1,4 +1,5 @@
 ﻿using katdata.Features.Entities.Models;
+using katdata.Features.Entities.Urban;
 
 namespace katdata.Features.Entities
 {
@@ -6,17 +7,20 @@ namespace katdata.Features.Entities
     {
         public required Guid ProvinceId { get; init; }
 
-        public required Guid CountryId { get; init; } // This need to be a foreign key to Country
+        //public required Guid CountryId { get; init; } // This need to be a foreign key to Country
 
         public required string ProvinceName { get; init; }
 
-        public required ICollection<ResourceLocation> Resources { get; init; }
+        public required ICollection<Settlement> Settlements { get; init; }
 
-        public required ICollection<ProductionFacility> ProductionFacility { get; init; } = [];
 
-        public required ICollection<PopulationSegment> PopulationSegments { get; init; } = [];
+        //public required ICollection<ResourceLocation> Resources { get; init; }
 
-        public void AddResourceLocation(ResourceLocation resourceLocation) => Resources.Add(resourceLocation);
+        //public required ICollection<ProductionFacility> ProductionFacility { get; init; } = [];
+
+        //public required ICollection<PopulationSegment> PopulationSegments { get; init; } = [];
+
+        //public void AddResourceLocation(ResourceLocation resourceLocation) => Resources.Add(resourceLocation);
 
     }
 }

@@ -1,200 +1,145 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using katdata.Features.Entities.Urban;
+using katdata.Features.Entities.Utils;
+using Microsoft.EntityFrameworkCore;
 
-namespace katdata.Features.Entities.Population
+namespace katdata.Features.Entities.Population;
+
+public abstract class PopulationSegment
 {
-    public abstract class PopulationSegment
+    //[Key]
+    //public Guid Id { get; init; }
+
+    public required Guid SegmentId { get; init; } // Link to Settlement
+
+    public abstract PopulationSegmentType Type { get; }
+
+    // List of buckets: Each bucket represents an age range (e.g., 0–6 months)
+    public List<long> Buckets { get; set; } = new List<long>();
+
+    public long GetTotal() => Buckets.Sum();
+}
+
+[Owned]
+public sealed class NewBorn : PopulationSegment
+{
+    public override PopulationSegmentType Type => PopulationSegmentType.NewBorn;
+
+    public long ProcessTurn(Children childrenSegment)
     {
-        [Key]
-        public Guid Id { get; init; }
-
-        public required Guid SegmentId { get; init; } // Link to Settlement
-
-        public required int CurrentAge { get; set; } = 0;
-
-        public abstract PopulationSegmentType Type { get; }
-
-        public abstract int MaxAge { get; }
-
-        protected long PopulationCount { get; set; }
-
-        public long GetTotal() => this.PopulationCount;
-
-        public void ProcessAge() => this.CurrentAge++;
-
-        public void IncreasePopulation(int amount) => this.PopulationCount += amount;
-
-        public void DecreasePopulation(int amount) => this.PopulationCount = Math.Max(0, this.PopulationCount - amount);
-
-
-    }
-
-    public sealed class NewBorn : PopulationSegment
-    {
-        public override PopulationSegmentType Type => PopulationSegmentType.NewBorn;
-
-        public override int MaxAge => 12;
-    }
-
-
-    public sealed class Children : PopulationSegment
-    {
-        public override PopulationSegmentType Type => PopulationSegmentType.Children;
-
-        public override int MaxAge => 24;
-
-        public required decimal Education { get; set;}
-
-        public long EducatedCount => (long)Math.Round(this.PopulationCount * this.Education);
-
-        public long NonEducatedCount => this.PopulationCount - this.EducatedCount;
-
-    }
-
-    public sealed class AdultStudents : PopulationSegment
-    {
-        public override PopulationSegmentType Type => PopulationSegmentType.Studend;
-
-        public required decimal Working { get; set; }
-
-        public required decimal TecnincalEducation { get; set; }
-
-        public required decimal HighEducation { get; set; }
-
-        public override int MaxAge => 48;
-
-        public long WorkingCount => (long)Math.Round(this.PopulationCount * this.Working);
-
-        public long TecnicalSudentsCount => (long)Math.Round(this.PopulationCount * this.TecnincalEducation);
-
-        public long HightEducationCount => (long)Math.Round(this.PopulationCount * this.HighEducation);
-
-    }
-
-    public sealed class AdultsWorking : PopulationSegment
-    {
-        public override PopulationSegmentType Type => PopulationSegmentType.Workforce;
-
-        public required decimal BasicWorkers { get; set; } // Can only do basic labor
-
-        public required decimal TecnicalWorkers { get; set; } // High-skill workers
-
-        public required decimal HighLevelWorkers { get; set; } // Engineers, researchers, doctors
-
-        public override int MaxAge => 168;
-
-        public long BasicWorkersCount => (long)Math.Round(this.PopulationCount * this.BasicWorkers);
-
-        public long TecnicalWorkersCount => (long)Math.Round(this.PopulationCount * this.TecnicalWorkers);
-
-        public long HighLevelWorkersCount => (long)Math.Round(this.PopulationCount * this.HighLevelWorkers);
-    }
-
-    public sealed class Retired : PopulationSegment
-    {
-        public override PopulationSegmentType Type => PopulationSegmentType.Retired;
-
-        public override int MaxAge => 48;
-
-    }
-
-    public sealed record GrowthIndicator
-    {
-        public required decimal Education { get; set; }
-
-        public required decimal Health { get; init; }
-
-    }
-
-    public sealed record EducationIndicator
-    {
-        public required int Kindergarden { get; init; }
-
-        public required int TecnicalSchoolVacancies { get; init; }
-
-        public required int UniversityVacancies { get; init; }
-    }
-
-    public sealed record JobsIndicator
-    {
-        public required int LowSkillJobs { get; init; }
-
-        public required int BasicSkillJobs { get; init; }
-
-        public required int TecnicalSkillJobs { get; init; }
-
-        public required int HighSkillJobs { get; init; }
-    }
-
-    public sealed class PopulationProcessor
-    {
-
-        private void MovingAgeingPopulation(Settlement settlement)
+        // Shift populations between buckets
+        for (int i = Buckets.Count - 1; i > 0; i--)
         {
-            List<Population> segments = new()
-            {
-
-            }
+            Buckets[i] = Buckets[i - 1];
         }
 
+        // Add new newborns to the first bucket
+        Buckets[0] = GetNewBornCount(); // Replace with your logic for new births
+
+        // Move the last bucket to the Children segment
+        long countToMove = Buckets.Last();
+        childrenSegment.Buckets[0] += countToMove;
+        Buckets[^1] = 0; // Reset the last bucket
+
+        return countToMove;
     }
 
-
-    public sealed record PopulationEducation
+    public long ReturnBucktes(int group)
     {
-        public required long Uneducated { get; set; } // Can only do basic labor
-        public required long BasicEducation { get; set; } // Low-skill workers
-        public required long AdvancedEducation { get; set; } // High-skill workers
-        public required long HigherEducation { get; set; } // Engineers, researchers, doctors
-
-        // Total workforce by education level
-        public long GetTotalEducated() => BasicEducation + AdvancedEducation + HigherEducation;
-
-        // Graduates move up education levels each turn (based on schools & funding)
-        public void GraduateStudents(long basic, long advanced, long higher)
-        {
-            Uneducated = Math.Max(0, Uneducated - basic);
-            BasicEducation += basic;
-
-            BasicEducation = Math.Max(0, BasicEducation - advanced);
-            AdvancedEducation += advanced;
-
-            AdvancedEducation = Math.Max(0, AdvancedEducation - higher);
-            HigherEducation += higher;
-        }
+        return this.Buckets[group];
     }
 
-    public sealed record PopulationEmployment
+    private long GetNewBornCount()
     {
-        public required long TotalWorkforce { get; set; }
-        public required long Employed { get; set; }
-        public long Unemployed => TotalWorkforce - Employed;
-
-        public decimal UnemploymentRate => TotalWorkforce == 0 ? 0 : (decimal)Unemployed / TotalWorkforce;
-
-        // Update employment counts
-        public void UpdateEmployment(long newJobs, long lostJobs)
-        {
-            Employed = Math.Max(0, Employed + newJobs - lostJobs);
-        }
-    }
-
-    public sealed record PopulationGrowth
-    {
-        public required decimal BirthRate { get; set; } // Births per 1,000 people per turn
-        public required decimal DeathRate { get; set; } // Deaths per 1,000 people per turn
-
-        public long CalculateBirths(long totalPopulation) => (long)(totalPopulation * BirthRate / 1000);
-        public long CalculateDeaths(long totalPopulation) => (long)(totalPopulation * DeathRate / 1000);
-    }
-
-    public enum PopulationSegmentType
-    {
-        None = 0,
-        NewBorn,
-        Children,
-        Studend,
-        Workforce,
-        Retired,
+        return 20;
     }
 }
+
+[Owned]
+public sealed class Children : PopulationSegment
+{
+    public override PopulationSegmentType Type => PopulationSegmentType.Children;
+
+    public long ProcessTurn(YoungAdults youngAdultsSegment)
+    {
+        // Shift populations between buckets
+        for (int i = Buckets.Count - 1; i > 0; i--)
+        {
+            Buckets[i] = Buckets[i - 1];
+        }
+
+        // Move the last bucket to the YoungAdults segment
+        long countToMove = Buckets.Last();
+        youngAdultsSegment.Buckets[0] += countToMove;
+        Buckets[^1] = 0; // Reset the last bucket
+
+        return countToMove;
+    }
+
+    public long ReturnBucktes(int group)
+    {
+        return this.Buckets[group];
+    }
+}
+
+[Owned]
+public sealed class YoungAdults : PopulationSegment
+{
+    public override PopulationSegmentType Type => PopulationSegmentType.YoungAdults;
+
+    public long ProcessTurn(WorkingAdults workingAdultsSegment)
+    {
+        // Shift populations between buckets
+        for (int i = Buckets.Count - 1; i > 0; i--)
+        {
+            Buckets[i] = Buckets[i - 1];
+        }
+
+        // Move the last bucket to the WorkingAdults segment
+        long countToMove = Buckets.Last();
+        workingAdultsSegment.Buckets[0] += countToMove;
+        Buckets[^1] = 0; // Reset the last bucket
+
+        return countToMove;
+    }
+}
+
+[Owned]
+public sealed class WorkingAdults : PopulationSegment
+{
+    public override PopulationSegmentType Type => PopulationSegmentType.Workforce;
+
+    public long ProcessTurn(Retired retiredSegment)
+    {
+        // Shift populations between buckets
+        for (int i = Buckets.Count - 1; i > 0; i--)
+        {
+            Buckets[i] = Buckets[i - 1];
+        }
+
+        // Move the last bucket to the Retired segment
+        long countToMove = Buckets.Last();
+        retiredSegment.Buckets[0] += countToMove;
+        Buckets[^1] = 0; // Reset the last bucket
+
+        return countToMove;
+    }
+}
+
+[Owned]
+public sealed class Retired : PopulationSegment
+{
+    public override PopulationSegmentType Type => PopulationSegmentType.Retired;
+
+    public void ProcessTurn()
+    {
+        // Shift populations between buckets
+        for (int i = Buckets.Count - 1; i > 0; i--)
+        {
+            Buckets[i] = Buckets[i - 1];
+        }
+
+        // Reset the first bucket (no new individuals enter the Retired segment)
+        Buckets[0] = 0;
+    }
+}
+
